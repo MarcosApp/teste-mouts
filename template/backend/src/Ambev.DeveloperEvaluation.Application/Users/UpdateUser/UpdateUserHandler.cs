@@ -29,9 +29,13 @@ public class UpdateUserHandler : IRequestHandler<UpdateUserCommand, UpdateUserRe
         user.Phone = command.Phone;
         user.Status = command.Status;
         user.Role = command.Role;
-        user.Name = new UserName(command.Firstname, command.Lastname);
-        user.Address = new Address(command.City, command.Street, command.AddressNumber, command.Zipcode,
-            new Geolocation(command.GeoLat, command.GeoLong));
+        user.Name = new UserName(command.Name.Firstname, command.Name.Lastname);
+        user.Address = new Address(
+            command.Address.City,
+            command.Address.Street,
+            command.Address.Number,
+            command.Address.Zipcode,
+            new Geolocation(command.Address.Geolocation.Lat, command.Address.Geolocation.Long));
         user.UpdatedAt = DateTime.UtcNow;
 
         if (!string.IsNullOrWhiteSpace(command.Password))

@@ -12,12 +12,29 @@ public class UpdateUserCommand : IRequest<UpdateUserResult>
     public string Password { get; set; } = string.Empty;
     public UserStatus Status { get; set; }
     public UserRole Role { get; set; }
+
+    // Nested objects matching the spec: { "name": { "firstname": "...", "lastname": "..." }, "address": {...} }
+    public UserNameCommand Name { get; set; } = new();
+    public UserAddressCommand Address { get; set; } = new();
+}
+
+public class UserNameCommand
+{
     public string Firstname { get; set; } = string.Empty;
     public string Lastname { get; set; } = string.Empty;
+}
+
+public class UserAddressCommand
+{
     public string City { get; set; } = string.Empty;
     public string Street { get; set; } = string.Empty;
-    public int AddressNumber { get; set; }
+    public int Number { get; set; }
     public string Zipcode { get; set; } = string.Empty;
-    public string GeoLat { get; set; } = string.Empty;
-    public string GeoLong { get; set; } = string.Empty;
+    public UserGeolocationCommand Geolocation { get; set; } = new();
+}
+
+public class UserGeolocationCommand
+{
+    public string Lat { get; set; } = string.Empty;
+    public string Long { get; set; } = string.Empty;
 }
