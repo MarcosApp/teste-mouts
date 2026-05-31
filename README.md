@@ -454,6 +454,108 @@ docs: rewrite README with full Docker, env vars, curl examples
 
 ---
 
+## Test Results & Validation Report
+
+### API Endpoint Tests — 35 / 35 PASS
+
+| API | Endpoint | Status |
+|-----|----------|--------|
+| **Auth** | `POST /api/Auth` (valid credentials) | ✅ 200 |
+| **Auth** | `POST /api/Auth` (wrong password) | ✅ 401 |
+| **Users** | `POST /api/users` | ✅ 201 |
+| **Users** | `GET /api/users` (paginated) | ✅ 200 |
+| **Users** | `GET /api/users/{id}` | ✅ 200 |
+| **Users** | `GET /api/users/{id}` (not found) | ✅ 404 |
+| **Users** | `PUT /api/users/{id}` (name + address) | ✅ 200 |
+| **Users** | `DELETE /api/users/{id}` | ✅ 200 |
+| **Products** | `POST /api/products` (Rating value object) | ✅ 201 |
+| **Products** | `GET /api/products` | ✅ 200 |
+| **Products** | `GET /api/products/categories` | ✅ 200 |
+| **Products** | `GET /api/products/category/{cat}` | ✅ 200 |
+| **Products** | `GET /api/products/{id}` | ✅ 200 |
+| **Products** | `GET /api/products/{id}` (not found) | ✅ 404 |
+| **Products** | `PUT /api/products/{id}` | ✅ 200 |
+| **Products** | `DELETE /api/products/{id}` | ✅ 200 |
+| **Sales** | `POST /api/sales` (discount tiers applied) | ✅ 201 |
+| **Sales** | `POST /api/sales` (duplicate number) | ✅ 400 |
+| **Sales** | `POST /api/sales` (qty > 20 rejected) | ✅ 400 |
+| **Sales** | `GET /api/sales` (paginated) | ✅ 200 |
+| **Sales** | `GET /api/sales?isCancelled=false` | ✅ 200 |
+| **Sales** | `GET /api/sales?customerName=Ana*` (wildcard) | ✅ 200 |
+| **Sales** | `GET /api/sales?_minTotalAmount=100` | ✅ 200 |
+| **Sales** | `GET /api/sales?_minDate=2026-01-01T00:00:00Z` | ✅ 200 |
+| **Sales** | `GET /api/sales?_order=totalAmount desc` | ✅ 200 |
+| **Sales** | `GET /api/sales/{id}` | ✅ 200 |
+| **Sales** | `GET /api/sales/{id}` (not found) | ✅ 404 |
+| **Sales** | `PUT /api/sales/{id}` (qty=4 → 10% discount) | ✅ 200 |
+| **Sales** | `PATCH /api/sales/{id}/items/{itemId}/cancel` | ✅ 200 |
+| **Sales** | `PATCH cancel already-cancelled item` | ✅ 400 |
+| **Sales** | `PATCH /api/sales/{id}/cancel` | ✅ 200 |
+| **Sales** | `PATCH cancel already-cancelled sale` | ✅ 400 |
+| **Sales** | `DELETE /api/sales/{id}` | ✅ 200 |
+| **Health** | `GET /health` | ✅ 200 |
+
+### Business Rules — All Verified in Production
+
+| Quantity per item | Discount | Verified |
+|-------------------|----------|----------|
+| 1–3 | 0% | ✅ `qty=3, price=100 → total R$300` |
+| 4–9 | 10% | ✅ `qty=4, price=100 → total R$360` |
+| 10–20 | 20% | ✅ `qty=10, price=50 → total R$400` |
+| > 20 | ❌ Not allowed | ✅ `qty=21 → HTTP 400` |
+| Mixed in one sale | Both tiers | ✅ `R$300 + R$400 = R$700` |
+
+### Unit Tests — 82 / 82 PASS
+
+```
+dotnet test tests/Ambev.DeveloperEvaluation.Unit
+→ Passed: 82  Failed: 0  Duration: ~1s
+```
+
+| Test Class | Tests | Coverage |
+|------------|-------|---------|
+| `SaleItemTests` | 6 | Discount tiers, max-qty guard, cancellation, total calc |
+| `SaleTests` | 5 | Total recalc, cancellation, SetItems, Validate |
+| `CreateSaleHandlerTests` | 4 | Success, duplicate number, validation error, event publish |
+| `GetSaleHandlerTests` | 2 | Found and not-found paths |
+| `CancelSaleHandlerTests` | 4 | Cancel sale/item, already-cancelled, not found |
+| `CancelSaleItemHandlerTests` | 3 | Cancel item, already-cancelled, not found |
+| `UserTests` + validators | 58 | Template existing tests |
+
+### Architecture Overview
+
+```
+Domain      → Entities, Value Objects, Domain Events, Repository interfaces
+Application → CQRS Handlers, Validators, AutoMapper Profiles
+ORM         → EF Core Configurations, Migrations, Repository implementations
+WebApi      → Controllers, Request/Response models, Exception Middleware
+IoC         → Dependency injection registration
+```
+
+**Key patterns applied:**
+- Domain-Driven Design (DDD) with `Sale` aggregate root
+- CQRS via MediatR (Command/Query separation)
+- External Identity pattern (CustomerId + CustomerName denormalized)
+- Value Objects: `Rating`, `UserName`, `Address`, `Geolocation`
+- Repository pattern with interfaces in Domain layer
+- `ValidationBehavior<,>` pipeline for cross-cutting validation
+- `JsonStringEnumConverter` — enums as strings in JSON (`"Active"`, `"Admin"`)
+
+**Error response format:**
+```json
+{ "type": "ResourceNotFound", "error": "Sale with ID '...' not found.", "detail": "..." }
+```
+
+| HTTP | Type | When |
+|------|------|------|
+| 400 | `ValidationError` | FluentValidation failure |
+| 400 | `BusinessError` | Business rule violation |
+| 401 | `AuthenticationError` | Invalid credentials |
+| 404 | `ResourceNotFound` | Entity not found |
+| 500 | `InternalError` | Unexpected server error (logged) |
+
+---
+
 ## Documentation References
 
 - [Overview](.doc/overview.md)
