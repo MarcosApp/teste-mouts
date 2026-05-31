@@ -1,4 +1,4 @@
-using Ambev.DeveloperEvaluation.Application.Sales.CreateSale;
+using Ambev.DeveloperEvaluation.Application.Sales.Common;
 using Ambev.DeveloperEvaluation.Application.Sales.GetSale;
 using Ambev.DeveloperEvaluation.WebApi.Features.Sales.CreateSale;
 using AutoMapper;
