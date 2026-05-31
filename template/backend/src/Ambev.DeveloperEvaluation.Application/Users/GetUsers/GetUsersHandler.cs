@@ -1,6 +1,6 @@
 using AutoMapper;
 using MediatR;
-using Ambev.DeveloperEvaluation.Application.Users.CreateUser;
+using Ambev.DeveloperEvaluation.Application.Users.GetUser;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 
 namespace Ambev.DeveloperEvaluation.Application.Users.GetUsers;
@@ -21,7 +21,7 @@ public class GetUsersHandler : IRequestHandler<GetUsersQuery, GetUsersResult>
         var (users, total) = await _userRepository.GetPagedAsync(query.Page, query.Size, query.Order, cancellationToken);
         return new GetUsersResult
         {
-            Data = _mapper.Map<IEnumerable<CreateUserResult>>(users),
+            Data = _mapper.Map<IEnumerable<GetUserResult>>(users),
             TotalItems = total,
             CurrentPage = query.Page,
             TotalPages = (int)Math.Ceiling((double)total / query.Size)
