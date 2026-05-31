@@ -9,6 +9,7 @@ public class ListCartsQuery : IRequest<ListCartsResult>
     public int Page { get; set; } = 1;
     public int Size { get; set; } = 10;
     public string? Order { get; set; }
+    public Guid? UserId { get; set; }
 }
 
 public class ListCartsResult
@@ -28,7 +29,7 @@ public class ListCartsHandler : IRequestHandler<ListCartsQuery, ListCartsResult>
 
     public async Task<ListCartsResult> Handle(ListCartsQuery query, CancellationToken ct)
     {
-        var (carts, total) = await _repo.GetPagedAsync(query.Page, query.Size, query.Order, ct);
+        var (carts, total) = await _repo.GetPagedAsync(query.Page, query.Size, query.Order, query.UserId, ct);
         return new ListCartsResult
         {
             Data = _mapper.Map<IEnumerable<CartResult>>(carts),
