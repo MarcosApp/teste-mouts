@@ -18,7 +18,7 @@ public class SaleItem : BaseEntity
     public string ProductName { get; set; } = string.Empty;
 
     public int Quantity { get; private set; }
-    public decimal UnitPrice { get; set; }
+    public decimal UnitPrice { get; private set; }
     public decimal Discount { get; private set; }
     public decimal TotalAmount { get; private set; }
     public bool IsCancelled { get; private set; }
