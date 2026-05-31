@@ -16,6 +16,12 @@ public class BaseController : ControllerBase
     protected IActionResult Ok<T>(T data) =>
             base.Ok(new ApiResponseWithData<T> { Data = data, Success = true });
 
+    /// <summary>Returns an OkObjectResult with the given value, bypassing the ApiResponseWithData wrapper.</summary>
+    protected IActionResult ApiOk(object value) => new OkObjectResult(value);
+
+    protected IActionResult ApiCreated(string location, object value) =>
+        new CreatedResult(location, value);
+
     protected IActionResult Created<T>(string routeName, object routeValues, T data) =>
         base.CreatedAtRoute(routeName, routeValues, new ApiResponseWithData<T> { Data = data, Success = true });
 

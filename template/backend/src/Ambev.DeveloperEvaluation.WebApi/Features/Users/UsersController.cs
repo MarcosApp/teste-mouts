@@ -44,7 +44,7 @@ public class UsersController : BaseController
         CancellationToken cancellationToken = default)
     {
         var result = await _mediator.Send(new GetUsersQuery { Page = _page, Size = _size, Order = _order }, cancellationToken);
-        return Ok(new ApiResponseWithData<GetUsersResult> { Success = true, Message = "Users retrieved successfully", Data = result });
+        return ApiOk(new ApiResponseWithData<GetUsersResult> { Success = true, Message = "Users retrieved successfully", Data = result });
     }
 
     /// <summary>Updates a user by ID.</summary>
@@ -55,7 +55,7 @@ public class UsersController : BaseController
     {
         command.Id = id;
         var result = await _mediator.Send(command, cancellationToken);
-        return Ok(new ApiResponseWithData<UpdateUserResult> { Success = true, Message = "User updated successfully", Data = result });
+        return ApiOk(new ApiResponseWithData<UpdateUserResult> { Success = true, Message = "User updated successfully", Data = result });
     }
 
     /// <summary>
@@ -108,7 +108,7 @@ public class UsersController : BaseController
         var command = _mapper.Map<GetUserCommand>(request.Id);
         var response = await _mediator.Send(command, cancellationToken);
 
-        return Ok(new ApiResponseWithData<GetUserResponse>
+        return ApiOk(new ApiResponseWithData<GetUserResponse>
         {
             Success = true,
             Message = "User retrieved successfully",
@@ -138,7 +138,7 @@ public class UsersController : BaseController
         var command = _mapper.Map<DeleteUserCommand>(request.Id);
         await _mediator.Send(command, cancellationToken);
 
-        return Ok(new ApiResponse
+        return ApiOk(new ApiResponse
         {
             Success = true,
             Message = "User deleted successfully"
