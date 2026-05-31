@@ -36,6 +36,10 @@ namespace Ambev.DeveloperEvaluation.WebApi.Middleware
             {
                 await HandleErrorAsync(context, StatusCodes.Status404NotFound, "ResourceNotFound", ex.Message);
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                await HandleErrorAsync(context, StatusCodes.Status401Unauthorized, "AuthenticationError", ex.Message);
+            }
             catch (InvalidOperationException ex) when (!IsInfrastructureError(ex))
             {
                 await HandleErrorAsync(context, StatusCodes.Status400BadRequest, "BusinessError", ex.Message);

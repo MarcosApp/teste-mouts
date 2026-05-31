@@ -13,7 +13,10 @@ public class CreateUserProfile : Profile
     /// </summary>
     public CreateUserProfile()
     {
-        CreateMap<CreateUserCommand, User>();
+        CreateMap<CreateUserCommand, User>()
+            .ForMember(dest => dest.Name, opt => opt.Ignore())
+            .ForMember(dest => dest.Address, opt => opt.Ignore());
+
         CreateMap<User, CreateUserResult>();
     }
 }
