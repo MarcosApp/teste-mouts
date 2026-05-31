@@ -8,6 +8,8 @@ using Ambev.DeveloperEvaluation.WebApi.Features.Users.DeleteUser;
 using Ambev.DeveloperEvaluation.Application.Users.CreateUser;
 using Ambev.DeveloperEvaluation.Application.Users.GetUser;
 using Ambev.DeveloperEvaluation.Application.Users.DeleteUser;
+using Ambev.DeveloperEvaluation.Application.Users.GetUsers;
+using Ambev.DeveloperEvaluation.Application.Users.UpdateUser;
 
 namespace Ambev.DeveloperEvaluation.WebApi.Features.Users;
 
@@ -30,6 +32,30 @@ public class UsersController : BaseController
     {
         _mediator = mediator;
         _mapper = mapper;
+    }
+
+    /// <summary>Retrieves a paginated list of users.</summary>
+    [HttpGet]
+    [ProducesResponseType(typeof(ApiResponseWithData<GetUsersResult>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetUsers(
+        [FromQuery] int _page = 1,
+        [FromQuery] int _size = 10,
+        [FromQuery] string? _order = null,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _mediator.Send(new GetUsersQuery { Page = _page, Size = _size, Order = _order }, cancellationToken);
+        return Ok(new ApiResponseWithData<GetUsersResult> { Success = true, Message = "Users retrieved successfully", Data = result });
+    }
+
+    /// <summary>Updates a user by ID.</summary>
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(typeof(ApiResponseWithData<UpdateUserResult>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateUser([FromRoute] Guid id, [FromBody] UpdateUserCommand command, CancellationToken cancellationToken)
+    {
+        command.Id = id;
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(new ApiResponseWithData<UpdateUserResult> { Success = true, Message = "User updated successfully", Data = result });
     }
 
     /// <summary>

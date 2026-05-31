@@ -72,4 +72,29 @@ public class UserRepository : IUserRepository
         await _context.SaveChangesAsync(cancellationToken);
         return true;
     }
+
+    public async Task<User> UpdateAsync(User user, CancellationToken cancellationToken = default)
+    {
+        _context.Users.Update(user);
+        await _context.SaveChangesAsync(cancellationToken);
+        return user;
+    }
+
+    public async Task<(IEnumerable<User> Users, int TotalCount)> GetPagedAsync(
+        int page, int size, string? orderBy, CancellationToken cancellationToken = default)
+    {
+        var query = _context.Users.AsQueryable();
+
+        query = orderBy?.Trim('"').ToLower() switch
+        {
+            "username desc" => query.OrderByDescending(u => u.Username),
+            "email desc"    => query.OrderByDescending(u => u.Email),
+            "email"  or "email asc"    => query.OrderBy(u => u.Email),
+            _               => query.OrderBy(u => u.Username)
+        };
+
+        var total = await query.CountAsync(cancellationToken);
+        var users = await query.Skip((page - 1) * size).Take(size).ToListAsync(cancellationToken);
+        return (users, total);
+    }
 }

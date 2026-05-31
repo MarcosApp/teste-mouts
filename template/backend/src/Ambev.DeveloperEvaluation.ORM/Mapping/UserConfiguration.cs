@@ -27,5 +27,23 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasConversion<string>()
             .HasMaxLength(20);
 
+        builder.OwnsOne(u => u.Name, n =>
+        {
+            n.Property(x => x.Firstname).HasColumnName("Firstname").HasMaxLength(50);
+            n.Property(x => x.Lastname).HasColumnName("Lastname").HasMaxLength(50);
+        });
+
+        builder.OwnsOne(u => u.Address, a =>
+        {
+            a.Property(x => x.City).HasColumnName("City").HasMaxLength(100);
+            a.Property(x => x.Street).HasColumnName("Street").HasMaxLength(200);
+            a.Property(x => x.Number).HasColumnName("AddressNumber");
+            a.Property(x => x.Zipcode).HasColumnName("Zipcode").HasMaxLength(20);
+            a.OwnsOne(x => x.Geolocation, g =>
+            {
+                g.Property(x => x.Lat).HasColumnName("GeoLat").HasMaxLength(30);
+                g.Property(x => x.Long).HasColumnName("GeoLong").HasMaxLength(30);
+            });
+        });
     }
 }
