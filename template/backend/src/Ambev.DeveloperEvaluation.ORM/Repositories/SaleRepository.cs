@@ -1,6 +1,7 @@
 using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace Ambev.DeveloperEvaluation.ORM.Repositories;
 
@@ -53,9 +54,14 @@ public class SaleRepository : ISaleRepository
     }
 
     public async Task<(IEnumerable<Sale> Sales, int TotalCount)> GetPagedAsync(
-        int page, int size, string? orderBy, CancellationToken cancellationToken = default)
+        int page, int size, string? orderBy,
+        SaleFilter? filter = null,
+        CancellationToken cancellationToken = default)
     {
         var query = _context.Sales.Include(s => s.Items).AsQueryable();
+
+        if (filter != null)
+            query = ApplyFilter(query, filter);
 
         if (!string.IsNullOrWhiteSpace(orderBy))
             query = ApplyOrdering(query, orderBy);
@@ -70,6 +76,54 @@ public class SaleRepository : ISaleRepository
             .ToListAsync(cancellationToken);
 
         return (sales, totalCount);
+    }
+
+    private static IQueryable<Sale> ApplyFilter(IQueryable<Sale> query, SaleFilter filter)
+    {
+        if (filter.CustomerId.HasValue)
+            query = query.Where(s => s.CustomerId == filter.CustomerId.Value);
+
+        if (!string.IsNullOrWhiteSpace(filter.CustomerName))
+        {
+            var name = filter.CustomerName.Trim('*').ToLower();
+            if (filter.CustomerName.StartsWith('*') && filter.CustomerName.EndsWith('*'))
+                query = query.Where(s => s.CustomerName.ToLower().Contains(name));
+            else if (filter.CustomerName.StartsWith('*'))
+                query = query.Where(s => s.CustomerName.ToLower().EndsWith(name));
+            else if (filter.CustomerName.EndsWith('*'))
+                query = query.Where(s => s.CustomerName.ToLower().StartsWith(name));
+            else
+                query = query.Where(s => s.CustomerName.ToLower() == name);
+        }
+
+        if (filter.BranchId.HasValue)
+            query = query.Where(s => s.BranchId == filter.BranchId.Value);
+
+        if (!string.IsNullOrWhiteSpace(filter.SaleNumber))
+        {
+            var num = filter.SaleNumber.Trim('*').ToLower();
+            if (filter.SaleNumber.EndsWith('*'))
+                query = query.Where(s => s.SaleNumber.ToLower().StartsWith(num));
+            else
+                query = query.Where(s => s.SaleNumber.ToLower() == num);
+        }
+
+        if (filter.IsCancelled.HasValue)
+            query = query.Where(s => s.IsCancelled == filter.IsCancelled.Value);
+
+        if (filter.MinDate.HasValue)
+            query = query.Where(s => s.SaleDate >= filter.MinDate.Value);
+
+        if (filter.MaxDate.HasValue)
+            query = query.Where(s => s.SaleDate <= filter.MaxDate.Value);
+
+        if (filter.MinTotalAmount.HasValue)
+            query = query.Where(s => s.TotalAmount >= filter.MinTotalAmount.Value);
+
+        if (filter.MaxTotalAmount.HasValue)
+            query = query.Where(s => s.TotalAmount <= filter.MaxTotalAmount.Value);
+
+        return query;
     }
 
     private static IQueryable<Sale> ApplyOrdering(IQueryable<Sale> query, string orderBy)

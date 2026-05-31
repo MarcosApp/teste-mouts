@@ -9,5 +9,8 @@ public interface ISaleRepository
     Task<Sale?> GetBySaleNumberAsync(string saleNumber, CancellationToken cancellationToken = default);
     Task<Sale> UpdateAsync(Sale sale, CancellationToken cancellationToken = default);
     Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
-    Task<(IEnumerable<Sale> Sales, int TotalCount)> GetPagedAsync(int page, int size, string? orderBy, CancellationToken cancellationToken = default);
+    Task<(IEnumerable<Sale> Sales, int TotalCount)> GetPagedAsync(
+        int page, int size, string? orderBy,
+        SaleFilter? filter = null,
+        CancellationToken cancellationToken = default);
 }

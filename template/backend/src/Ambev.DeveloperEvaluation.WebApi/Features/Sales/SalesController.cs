@@ -57,9 +57,26 @@ public class SalesController : BaseController
         [FromQuery] int _page = 1,
         [FromQuery] int _size = 10,
         [FromQuery] string? _order = null,
+        [FromQuery] Guid? customerId = null,
+        [FromQuery] string? customerName = null,
+        [FromQuery] Guid? branchId = null,
+        [FromQuery] string? saleNumber = null,
+        [FromQuery] bool? isCancelled = null,
+        [FromQuery] DateTime? _minDate = null,
+        [FromQuery] DateTime? _maxDate = null,
+        [FromQuery] decimal? _minTotalAmount = null,
+        [FromQuery] decimal? _maxTotalAmount = null,
         CancellationToken cancellationToken = default)
     {
-        var query = new ListSalesQuery { Page = _page, Size = _size, Order = _order };
+        var query = new ListSalesQuery
+        {
+            Page = _page, Size = _size, Order = _order,
+            CustomerId = customerId, CustomerName = customerName,
+            BranchId = branchId, SaleNumber = saleNumber,
+            IsCancelled = isCancelled,
+            MinDate = _minDate, MaxDate = _maxDate,
+            MinTotalAmount = _minTotalAmount, MaxTotalAmount = _maxTotalAmount
+        };
         var result = await _mediator.Send(query, cancellationToken);
 
         return Ok(new ApiResponseWithData<object>

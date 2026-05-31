@@ -1,14 +1,7 @@
-using MediatR;
+namespace Ambev.DeveloperEvaluation.Domain.Repositories;
 
-namespace Ambev.DeveloperEvaluation.Application.Sales.ListSales;
-
-public class ListSalesQuery : IRequest<ListSalesResult>
+public class SaleFilter
 {
-    public int Page { get; set; } = 1;
-    public int Size { get; set; } = 10;
-    public string? Order { get; set; }
-
-    // Filters
     public Guid? CustomerId { get; set; }
     public string? CustomerName { get; set; }
     public Guid? BranchId { get; set; }

@@ -18,7 +18,20 @@ public class ListSalesHandler : IRequestHandler<ListSalesQuery, ListSalesResult>
 
     public async Task<ListSalesResult> Handle(ListSalesQuery query, CancellationToken cancellationToken)
     {
-        var (sales, totalCount) = await _saleRepository.GetPagedAsync(query.Page, query.Size, query.Order, cancellationToken);
+        var filter = new SaleFilter
+        {
+            CustomerId = query.CustomerId,
+            CustomerName = query.CustomerName,
+            BranchId = query.BranchId,
+            SaleNumber = query.SaleNumber,
+            IsCancelled = query.IsCancelled,
+            MinDate = query.MinDate,
+            MaxDate = query.MaxDate,
+            MinTotalAmount = query.MinTotalAmount,
+            MaxTotalAmount = query.MaxTotalAmount,
+        };
+
+        var (sales, totalCount) = await _saleRepository.GetPagedAsync(query.Page, query.Size, query.Order, filter, cancellationToken);
 
         var totalPages = (int)Math.Ceiling((double)totalCount / query.Size);
 
