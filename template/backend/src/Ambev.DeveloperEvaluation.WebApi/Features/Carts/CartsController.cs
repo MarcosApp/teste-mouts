@@ -40,9 +40,10 @@ public class CartsController : BaseController
         [FromQuery] int _page = 1,
         [FromQuery] int _size = 10,
         [FromQuery] string? _order = null,
+        [FromQuery] Guid? userId = null,
         CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new ListCartsQuery { Page = _page, Size = _size, Order = _order }, ct);
+        var result = await _mediator.Send(new ListCartsQuery { Page = _page, Size = _size, Order = _order, UserId = userId }, ct);
         return ApiOk(new
         {
             data = result.Data,

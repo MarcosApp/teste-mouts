@@ -40,9 +40,11 @@ public class CartRepository : ICartRepository
     }
 
     public async Task<(IEnumerable<Cart> Carts, int TotalCount)> GetPagedAsync(
-        int page, int size, string? orderBy, CancellationToken cancellationToken = default)
+        int page, int size, string? orderBy, Guid? userId = null, CancellationToken cancellationToken = default)
     {
-        var filter = Builders<Cart>.Filter.Empty;
+        var filter = userId.HasValue
+            ? Builders<Cart>.Filter.Eq(c => c.UserId, userId.Value)
+            : Builders<Cart>.Filter.Empty;
         var total = (int)await _context.Carts.CountDocumentsAsync(filter, cancellationToken: cancellationToken);
 
         var sort = orderBy?.ToLower() switch
