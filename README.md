@@ -363,6 +363,97 @@ curl "http://localhost:5119/api/users?_page=1&_size=10&_order=username+asc"
 
 ---
 
+## Git Flow & Branching Strategy
+
+This project follows the **Git Flow** branching model.
+
+### Branch Structure
+
+```
+main         ──────────────────────────────────────────── (production-ready)
+                                                    ↑
+                                             merge release
+                                                    │
+develop      ──────────────────────────────────────── (integration)
+                ↑            ↑             ↑
+         feature/sale  feature/products  feature/users
+```
+
+### Branch Types
+
+| Branch | Purpose | Base | Merge into |
+|--------|---------|------|------------|
+| `main` | Production-ready code only | — | — |
+| `develop` | Integration of all features | `main` | `main` (via release) |
+| `feature/*` | New feature development | `develop` | `develop` |
+| `release/*` | Release preparation and versioning | `develop` | `main` + `develop` |
+| `hotfix/*` | Critical production fixes | `main` | `main` + `develop` |
+
+### Workflow for a New Feature
+
+```bash
+# 1. Start from develop
+git checkout develop
+git pull origin develop
+
+# 2. Create feature branch
+git checkout -b feature/sale-cancellation
+
+# 3. Develop with semantic commits
+git commit -m "feat(domain): add cancellation business rules to SaleItem"
+git commit -m "feat(application): add CancelSaleItem handler"
+git commit -m "test: add unit tests for CancelSaleItem"
+
+# 4. Push and open Pull Request → develop
+git push origin feature/sale-cancellation
+# Open PR: feature/sale-cancellation → develop
+
+# 5. After approval, merge into develop
+```
+
+### Semantic Commit Convention
+
+This project uses **Conventional Commits**:
+
+```
+<type>(<scope>): <description>
+
+Types:
+  feat     → new feature
+  fix      → bug fix
+  refactor → code change without new feature or fix
+  test     → adding or updating tests
+  docs     → documentation only
+  chore    → build process, dependency updates
+```
+
+**Examples from this project:**
+```
+feat(domain): add Sale and SaleItem entities with business rules
+feat(application): add CQRS handlers for Sale CRUD and cancellation
+feat(orm): add Sale EF Core configuration, repository and migration
+feat(webapi): add SalesController with full CRUD endpoints
+test: add unit tests for Sale domain rules and application handlers
+fix(auth): fix missing AutoMapper mapping for AuthenticateUser
+refactor(webapi): fix response nesting and separate request models
+docs: rewrite README with full Docker, env vars, curl examples
+```
+
+### Feature Branches Implemented
+
+| Branch | Feature | Status |
+|--------|---------|--------|
+| `feature/sale-domain` | Sale + SaleItem entities, domain events, validators | ✅ Merged |
+| `feature/sale-application` | CQRS handlers (Create, Get, Update, Delete, Cancel) | ✅ Merged |
+| `feature/sale-orm` | EF Core config, SaleRepository, migrations | ✅ Merged |
+| `feature/sale-webapi` | SalesController, request/response models | ✅ Merged |
+| `feature/sale-tests` | Unit tests for domain and handlers (82 tests) | ✅ Merged |
+| `feature/products-api` | Full Products CRUD + Rating value object | ✅ Merged |
+| `feature/users-api` | Complete Users API with name/address | ✅ Merged |
+| `feature/sale-filters` | Filtering support for GET /api/sales | ✅ Merged |
+
+---
+
 ## Documentation References
 
 - [Overview](.doc/overview.md)
