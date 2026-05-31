@@ -28,15 +28,19 @@ This API handles complete **Sales records** and also implements the **Products**
 
 ## Tech Stack
 
-- **.NET 8** / **C#** — backend
-- **PostgreSQL 13** — relational database
-- **EF Core 8** — ORM with migrations
-- **MediatR** — CQRS pattern
-- **AutoMapper** — object mapping
-- **FluentValidation** — input validation
-- **xUnit + NSubstitute + Bogus** — unit testing
-- **Serilog** — structured logging
-- **Docker / Docker Compose** — containerization
+| Technology | Role |
+|-----------|------|
+| **.NET 8 / C#** | Backend framework |
+| **PostgreSQL 13** | Relational database — Users, Sales, Products |
+| **MongoDB 8.0** | Document database — Carts (NoSQL) |
+| **EF Core 8** | ORM for PostgreSQL with code-first migrations |
+| **MongoDB.Driver 2.28** | Official MongoDB .NET driver |
+| **MediatR 12** | CQRS — Commands, Queries, Handlers |
+| **AutoMapper 13** | Object mapping between layers |
+| **FluentValidation 11** | Input validation |
+| **xUnit + NSubstitute + Bogus** | Unit testing, mocking, fake data |
+| **Serilog** | Structured logging |
+| **Docker / Docker Compose** | Containerization |
 
 ---
 
@@ -45,16 +49,38 @@ This API handles complete **Sales records** and also implements the **Products**
 ```
 template/backend/
 ├── src/
-│   ├── Ambev.DeveloperEvaluation.Domain/        # Entities, Value Objects, Events, Repositories (interfaces)
-│   ├── Ambev.DeveloperEvaluation.Application/   # CQRS Commands, Queries, Handlers, Profiles
-│   ├── Ambev.DeveloperEvaluation.ORM/           # EF Core, Repositories, Migrations
-│   ├── Ambev.DeveloperEvaluation.Common/        # JWT, Password, Validation utilities
-│   ├── Ambev.DeveloperEvaluation.IoC/           # Dependency injection registration
-│   └── Ambev.DeveloperEvaluation.WebApi/        # Controllers, Middleware, Startup
+│   ├── Ambev.DeveloperEvaluation.Domain/
+│   │   ├── Entities/         # Sale, SaleItem, User, Product, Cart
+│   │   ├── ValueObjects/     # Rating, UserName, Address, Geolocation
+│   │   ├── Events/           # SaleCreated, SaleModified, SaleCancelled, ItemCancelled
+│   │   └── Repositories/     # ISaleRepository, IUserRepository, IProductRepository, ICartRepository
+│   │
+│   ├── Ambev.DeveloperEvaluation.Application/
+│   │   ├── Sales/            # CreateSale, GetSale, UpdateSale, DeleteSale, CancelSale, ListSales
+│   │   ├── Products/         # CreateProduct, GetProduct, UpdateProduct, DeleteProduct, ListProducts, GetCategories
+│   │   ├── Users/            # CreateUser, GetUser, GetUsers, UpdateUser, DeleteUser
+│   │   ├── Carts/            # CreateCart, GetCart, UpdateCart, DeleteCart, ListCarts
+│   │   └── Auth/             # AuthenticateUser
+│   │
+│   ├── Ambev.DeveloperEvaluation.ORM/
+│   │   ├── Mapping/          # EF Core configurations (Sale, SaleItem, User, Product)
+│   │   ├── Migrations/       # PostgreSQL migrations
+│   │   ├── Repositories/     # SaleRepository, UserRepository, ProductRepository (EF Core)
+│   │   │                     # CartRepository (MongoDB)
+│   │   ├── DefaultContext.cs # EF Core DbContext (PostgreSQL)
+│   │   ├── MongoDbContext.cs # MongoDB context
+│   │   └── MongoDbSetup.cs   # BSON conventions and class maps
+│   │
+│   ├── Ambev.DeveloperEvaluation.Common/  # JWT, BCrypt, Validation
+│   ├── Ambev.DeveloperEvaluation.IoC/     # DI registration (EF Core + MongoDB)
+│   └── Ambev.DeveloperEvaluation.WebApi/
+│       ├── Features/         # Controllers per feature (Sales, Products, Users, Carts, Auth)
+│       └── Middleware/       # Exception handling, 401/404/400/500 mapping
+│
 └── tests/
-    ├── Ambev.DeveloperEvaluation.Unit/          # Unit tests (82 tests)
-    ├── Ambev.DeveloperEvaluation.Integration/   # (placeholder)
-    └── Ambev.DeveloperEvaluation.Functional/    # (placeholder)
+    ├── Ambev.DeveloperEvaluation.Unit/    # 82 unit tests
+    ├── Ambev.DeveloperEvaluation.Integration/
+    └── Ambev.DeveloperEvaluation.Functional/
 ```
 
 ---
@@ -143,6 +169,147 @@ dotnet run --project src/Ambev.DeveloperEvaluation.WebApi
 ```yaml
 environment:
   - ConnectionStrings__DefaultConnection=Host=ambev.developerevaluation.database;Port=5432;...
+```
+
+---
+
+## Database Architecture — PostgreSQL + MongoDB
+
+This project uses **two databases**, each chosen for what it does best.
+
+### Why two databases?
+
+| | PostgreSQL | MongoDB |
+|-|-----------|---------|
+| **Used for** | Users, Sales, Products | Carts |
+| **Type** | Relational (ACID transactions) | Document (NoSQL, schema-flexible) |
+| **Access layer** | EF Core + Migrations | MongoDB.Driver |
+| **Why it fits** | Sales/Users have fixed structure, need joins, enforce business rules | Carts have variable product lists per user, no joins needed, structure changes per context |
+
+> The project spec (`tech-stack.md`) explicitly lists both databases. The evaluation criteria (`overview.md`) assess *"Database skills with both PostgreSQL and MongoDB"* and *"Understanding of both relational and non relational database systems"*.
+
+---
+
+### PostgreSQL Configuration
+
+**Connection string** (`appsettings.json`):
+```json
+"ConnectionStrings": {
+  "DefaultConnection": "Host=localhost;Port=5432;Database=developer_evaluation;Username=developer;Password=ev@luAt10n"
+}
+```
+
+**Apply migrations** (creates tables: Users, Sales, SaleItems, Products):
+```bash
+dotnet ef database update \
+  --project src/Ambev.DeveloperEvaluation.ORM \
+  --startup-project src/Ambev.DeveloperEvaluation.WebApi \
+  --configuration Release
+```
+
+**Tables managed by EF Core:**
+| Table | Entity | Notes |
+|-------|--------|-------|
+| `Users` | `User` | Name + Address as owned value objects |
+| `Sales` | `Sale` | Aggregate root with Items |
+| `SaleItems` | `SaleItem` | Child of Sale, cascade delete |
+| `Products` | `Product` | Rating as owned value object |
+
+---
+
+### MongoDB Configuration
+
+**Connection string** (`appsettings.json`):
+```json
+"ConnectionStrings": {
+  "MongoConnection": "mongodb://developer:ev%40luAt10n@localhost:27017/developer_evaluation?authSource=admin"
+}
+```
+
+**No migrations needed** — MongoDB creates the collection automatically on first insert.
+
+**Collection:** `carts`
+
+**Document structure:**
+```json
+{
+  "_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa7",
+  "date": "2026-05-31T00:00:00Z",
+  "products": [
+    { "productId": "3fa85f64-5717-4562-b3fc-2c963f66afa8", "quantity": 2 },
+    { "productId": "3fa85f64-5717-4562-b3fc-2c963f66afa9", "quantity": 5 }
+  ]
+}
+```
+
+**Technical implementation decisions:**
+
+| Decision | Reason |
+|----------|--------|
+| `GuidSerializer(BsonType.String)` | Stores Guid as readable string in MongoDB instead of binary — easier to read in DB tools (Compass, Studio 3T) |
+| `BsonClassMap` for `Cart` | Keeps MongoDB config in the ORM layer — no infrastructure attributes (`[BsonId]`) leaking into the Domain entity |
+| `CamelCaseElementNameConvention` | JSON-style field names in MongoDB documents (`userId`, `products`) consistent with the API |
+| `IgnoreExtraElementsConvention` | Prevents deserialization errors if the document has extra fields — supports schema evolution |
+| `MongoDbContext` as `Singleton` | MongoDB driver is thread-safe; a single context instance is optimal |
+
+**Start MongoDB locally:**
+```bash
+docker-compose up -d ambev.developerevaluation.nosql
+```
+
+**Verify connection** — after starting the API:
+```bash
+curl http://localhost:5119/api/carts
+# Returns: { "data": [], "totalItems": 0, "currentPage": 1, "totalPages": 0 }
+```
+
+---
+
+### Carts API
+
+Full CRUD for shopping carts stored in MongoDB.
+
+#### Create Cart
+```bash
+curl -X POST http://localhost:5119/api/carts \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "date": "2026-05-31T00:00:00Z",
+    "products": [
+      { "productId": "3fa85f64-5717-4562-b3fc-2c963f66afa7", "quantity": 2 },
+      { "productId": "3fa85f64-5717-4562-b3fc-2c963f66afa8", "quantity": 5 }
+    ]
+  }'
+```
+
+#### List Carts (paginated)
+```bash
+curl "http://localhost:5119/api/carts?_page=1&_size=10&_order=date desc"
+```
+
+#### Get Cart by ID
+```bash
+curl "http://localhost:5119/api/carts/{id}"
+```
+
+#### Update Cart
+```bash
+curl -X PUT "http://localhost:5119/api/carts/{id}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "date": "2026-06-01T00:00:00Z",
+    "products": [
+      { "productId": "3fa85f64-5717-4562-b3fc-2c963f66afa9", "quantity": 10 }
+    ]
+  }'
+```
+
+#### Delete Cart
+```bash
+curl -X DELETE "http://localhost:5119/api/carts/{id}"
 ```
 
 ---
