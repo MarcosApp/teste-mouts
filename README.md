@@ -1,225 +1,21 @@
 # Developer Evaluation Project
 
-`READ CAREFULLY`
-
 ## Use Case
-**You are a developer on the DeveloperStore team. Now we need to implement the API prototypes.**
 
-As we work with `DDD`, to reference entities from other domains, we use the `External Identities` pattern with denormalization of entity descriptions.
+You are a developer on the **DeveloperStore** team implementing API prototypes using DDD principles. Entities from other domains are referenced via the **External Identities** pattern with denormalized descriptions.
 
-Therefore, you will write an API (complete CRUD) that handles sales records. The API needs to be able to inform:
-
-* Sale number
-* Date when the sale was made
-* Customer
-* Total sale amount
-* Branch where the sale was made
-* Products
-* Quantities
-* Unit prices
-* Discounts
-* Total amount for each item
-* Cancelled/Not Cancelled
-
-It's not mandatory, but it would be a differential to build code for publishing events of:
-* SaleCreated
-* SaleModified
-* SaleCancelled
-* ItemCancelled
-
-If you write the code, **it's not required** to actually publish to any Message Broker. You can log a message in the application log or however you find most convenient.
+This API handles complete **Sales records** and also implements the **Products**, **Users**, and **Auth** APIs.
 
 ### Business Rules
 
-* Purchases above 4 identical items have a 10% discount
-* Purchases between 10 and 20 identical items have a 20% discount
-* It's not possible to sell above 20 identical items
-* Purchases below 4 items cannot have a discount
-
-These business rules define quantity-based discounting tiers and limitations:
-
-1. Discount Tiers:
-   - 4+ items: 10% discount
-   - 10-20 items: 20% discount
-
-2. Restrictions:
-   - Maximum limit: 20 items per product
-   - No discounts allowed for quantities below 4 items
-
-## Overview
-This section provides a high-level overview of the project and the various skills and competencies it aims to assess for developer candidates. 
-
-See [Overview](/.doc/overview.md)
-
-## Tech Stack
-This section lists the key technologies used in the project, including the backend, testing, frontend, and database components. 
-
-See [Tech Stack](/.doc/tech-stack.md)
-
-## Frameworks
-This section outlines the frameworks and libraries that are leveraged in the project to enhance development productivity and maintainability. 
-
-See [Frameworks](/.doc/frameworks.md)
-
-<!-- 
-## API Structure
-This section includes links to the detailed documentation for the different API resources:
-- [API General](./docs/general-api.md)
-- [Products API](/.doc/products-api.md)
-- [Carts API](/.doc/carts-api.md)
-- [Users API](/.doc/users-api.md)
-- [Auth API](/.doc/auth-api.md)
--->
-
-## Project Structure
-This section describes the overall structure and organization of the project files and directories. 
-
-See [Project Structure](/.doc/project-structure.md)
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8)
-- [Docker & Docker Compose](https://docs.docker.com/get-docker/)
-- [dotnet-ef CLI](https://learn.microsoft.com/en-us/ef/core/cli/dotnet) — install once:
-  ```bash
-  dotnet tool install --global dotnet-ef
-  ```
-
----
-
-### 1. Clone the repository
-
-```bash
-git clone <repository-url>
-cd template/backend
-```
-
----
-
-### 2. Start the database
-
-```bash
-docker-compose up -d ambev.developerevaluation.database
-```
-
-> PostgreSQL will be available at `localhost:5432`  
-> Database: `developer_evaluation` | User: `developer` | Password: `ev@luAt10n`
-
----
-
-### 3. Apply database migrations
-
-```bash
-dotnet ef database update \
-  --project src/Ambev.DeveloperEvaluation.ORM \
-  --startup-project src/Ambev.DeveloperEvaluation.WebApi
-```
-
----
-
-### 4. Run the API
-
-```bash
-dotnet run --project src/Ambev.DeveloperEvaluation.WebApi
-```
-
-The API will start at `http://localhost:5119` (or the port shown in the terminal).
-
----
-
-### 5. Explore with Swagger
-
-Open your browser at:
-
-```
-http://localhost:5119/swagger
-```
-
----
-
-## Sales API — Endpoints
-
-| Method | Route | Description |
-|--------|-------|-------------|
-| `POST` | `/api/sales` | Create a new sale |
-| `GET` | `/api/sales` | List sales (paginated) |
-| `GET` | `/api/sales/{id}` | Get sale by ID |
-| `PUT` | `/api/sales/{id}` | Update a sale |
-| `DELETE` | `/api/sales/{id}` | Delete a sale |
-| `PATCH` | `/api/sales/{id}/cancel` | Cancel a sale |
-| `PATCH` | `/api/sales/{id}/items/{itemId}/cancel` | Cancel a sale item |
-
-### Pagination & Ordering (GET /api/sales)
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `_page` | 1 | Page number |
-| `_size` | 10 | Items per page |
-| `_order` | `saleDate desc` | Field and direction, e.g. `"totalAmount desc, saleDate asc"` |
-
-### Example: Create Sale
-
-```json
-POST /api/sales
-{
-  "saleNumber": "SALE-001",
-  "saleDate": "2026-05-31T00:00:00Z",
-  "customerId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  "customerName": "John Doe",
-  "branchId": "3fa85f64-5717-4562-b3fc-2c963f66afa7",
-  "branchName": "Main Branch",
-  "items": [
-    {
-      "productId": "3fa85f64-5717-4562-b3fc-2c963f66afa8",
-      "productName": "Product A",
-      "quantity": 10,
-      "unitPrice": 25.00
-    }
-  ]
-}
-```
-
-> With `quantity: 10` — a **20% discount** is automatically applied.
-
-### Business Rules (enforced automatically)
-
-| Quantity | Discount |
-|----------|----------|
-| 1–3 | 0% |
+| Quantity per item | Discount |
+|-------------------|----------|
+| 1–3 | 0% (no discount) |
 | 4–9 | 10% |
 | 10–20 | 20% |
 | > 20 | ❌ Not allowed |
 
----
-
-## Running Tests
-
-```bash
-dotnet test tests/Ambev.DeveloperEvaluation.Unit
-```
-
-To see detailed test output:
-
-```bash
-dotnet test tests/Ambev.DeveloperEvaluation.Unit --logger "console;verbosity=detailed"
-```
-
-### Test coverage includes:
-- `SaleItem` discount calculation for all quantity tiers
-- `Sale` aggregate: total recalculation, cancellation, item management
-- `CreateSaleHandler`: success, duplicate number, validation error, event publishing
-- `GetSaleHandler`: found and not found
-- `CancelSaleHandler` / `CancelSaleItemHandler`: all scenarios
-
----
-
-## Domain Events
-
-Events are published via MediatR and logged to the application log (no broker required):
+### Domain Events (logged via ILogger + MediatR)
 
 | Event | Trigger |
 |-------|---------|
@@ -230,10 +26,350 @@ Events are published via MediatR and logged to the application log (no broker re
 
 ---
 
-## Running with Full Docker Stack
+## Tech Stack
 
-To run the API and database together:
+- **.NET 8** / **C#** — backend
+- **PostgreSQL 13** — relational database
+- **EF Core 8** — ORM with migrations
+- **MediatR** — CQRS pattern
+- **AutoMapper** — object mapping
+- **FluentValidation** — input validation
+- **xUnit + NSubstitute + Bogus** — unit testing
+- **Serilog** — structured logging
+- **Docker / Docker Compose** — containerization
+
+---
+
+## Project Structure
+
+```
+template/backend/
+├── src/
+│   ├── Ambev.DeveloperEvaluation.Domain/        # Entities, Value Objects, Events, Repositories (interfaces)
+│   ├── Ambev.DeveloperEvaluation.Application/   # CQRS Commands, Queries, Handlers, Profiles
+│   ├── Ambev.DeveloperEvaluation.ORM/           # EF Core, Repositories, Migrations
+│   ├── Ambev.DeveloperEvaluation.Common/        # JWT, Password, Validation utilities
+│   ├── Ambev.DeveloperEvaluation.IoC/           # Dependency injection registration
+│   └── Ambev.DeveloperEvaluation.WebApi/        # Controllers, Middleware, Startup
+└── tests/
+    ├── Ambev.DeveloperEvaluation.Unit/          # Unit tests (82 tests)
+    ├── Ambev.DeveloperEvaluation.Integration/   # (placeholder)
+    └── Ambev.DeveloperEvaluation.Functional/    # (placeholder)
+```
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+| Tool | Version | Install |
+|------|---------|---------|
+| .NET SDK | 8.0+ | https://dotnet.microsoft.com/download |
+| Docker Desktop | Latest | https://docs.docker.com/get-docker/ |
+| dotnet-ef CLI | Latest | `dotnet tool install --global dotnet-ef` |
+
+---
+
+## Option 1 — Full Docker Stack (Recommended)
+
+Runs the API + PostgreSQL together in containers.
 
 ```bash
+# 1. Clone the repository
+git clone https://github.com/MarcosApp/teste-mouts.git
+cd teste-mouts/template/backend
+
+# 2. Build and start all services
 docker-compose up --build
 ```
+
+The API will be available at **http://localhost:8080**.
+
+> Swagger UI: **http://localhost:8080/swagger**
+
+### Services started by Docker Compose
+
+| Service | Port | Credentials |
+|---------|------|-------------|
+| WebApi | 8080 (HTTP), 8081 (HTTPS) | — |
+| PostgreSQL | 5432 | user: `developer` / pass: `ev@luAt10n` / db: `developer_evaluation` |
+| MongoDB | 27017 | user: `developer` / pass: `ev@luAt10n` |
+| Redis | 6379 | pass: `ev@luAt10n` |
+
+---
+
+## Option 2 — Local Development
+
+```bash
+cd teste-mouts/template/backend
+
+# 1. Start only the database
+docker-compose up -d ambev.developerevaluation.database
+
+# 2. Apply all migrations
+dotnet ef database update \
+  --project src/Ambev.DeveloperEvaluation.ORM \
+  --startup-project src/Ambev.DeveloperEvaluation.WebApi \
+  --configuration Release
+
+# 3. Run the API
+dotnet run --project src/Ambev.DeveloperEvaluation.WebApi
+```
+
+The API will be available at **http://localhost:5119**.
+
+> Swagger UI: **http://localhost:5119/swagger**
+
+---
+
+## Environment Variables
+
+The connection string and JWT secret can be overridden via environment variables:
+
+| Variable | Default (appsettings.json) | Description |
+|----------|---------------------------|-------------|
+| `ConnectionStrings__DefaultConnection` | `Host=localhost;Port=5432;Database=developer_evaluation;Username=developer;Password=ev@luAt10n` | PostgreSQL connection string |
+| `Jwt__SecretKey` | `YourSuperSecretKeyForJwtTokenGenerationThatShouldBeAtLeast32BytesLong` | JWT signing key |
+| `ASPNETCORE_ENVIRONMENT` | `Development` | `Development` enables Swagger |
+
+**Example override (local):**
+```bash
+export ConnectionStrings__DefaultConnection="Host=myhost;Port=5432;Database=mydb;Username=myuser;Password=mypass"
+dotnet run --project src/Ambev.DeveloperEvaluation.WebApi
+```
+
+**In docker-compose the WebApi service already sets:**
+```yaml
+environment:
+  - ConnectionStrings__DefaultConnection=Host=ambev.developerevaluation.database;Port=5432;...
+```
+
+---
+
+## Running Tests
+
+```bash
+cd template/backend
+
+# Run all unit tests
+dotnet test tests/Ambev.DeveloperEvaluation.Unit
+
+# With detailed output
+dotnet test tests/Ambev.DeveloperEvaluation.Unit --logger "console;verbosity=detailed"
+
+# With coverage report
+dotnet test tests/Ambev.DeveloperEvaluation.Unit /p:CollectCoverage=true /p:CoverletOutputFormat=lcov
+```
+
+**82 tests — 0 failures.** Coverage includes:
+
+| Test Class | What is tested |
+|------------|----------------|
+| `SaleItemTests` | Discount tiers (0%, 10%, 20%) and max-quantity guard (> 20) |
+| `SaleTests` | Total recalculation, cancellation, SetItems, Validate() |
+| `CreateSaleHandlerTests` | Success, duplicate number, invalid command, event publishing |
+| `GetSaleHandlerTests` | Found and not-found paths |
+| `CancelSaleHandlerTests` | Cancel sale and cancel item — success, already cancelled, not found |
+
+---
+
+## API Reference
+
+### Authentication
+
+```bash
+# Login and get JWT token
+curl -X POST http://localhost:5119/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "your_username", "password": "your_password"}'
+```
+
+---
+
+### Sales API
+
+#### Create Sale
+```bash
+curl -X POST http://localhost:5119/api/sales \
+  -H "Content-Type: application/json" \
+  -d '{
+    "saleNumber": "SALE-001",
+    "saleDate": "2026-05-31T00:00:00Z",
+    "customerId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "customerName": "John Doe",
+    "branchId": "3fa85f64-5717-4562-b3fc-2c963f66afa7",
+    "branchName": "Main Branch",
+    "items": [
+      {
+        "productId": "3fa85f64-5717-4562-b3fc-2c963f66afa8",
+        "productName": "Product A",
+        "quantity": 10,
+        "unitPrice": 25.00
+      },
+      {
+        "productId": "3fa85f64-5717-4562-b3fc-2c963f66afa9",
+        "productName": "Product B",
+        "quantity": 3,
+        "unitPrice": 100.00
+      }
+    ]
+  }'
+```
+
+> Product A: 10 × R$25 with **20% discount** = **R$200**
+> Product B: 3 × R$100 with **no discount** = **R$300**
+> **Total: R$500**
+
+#### List Sales (paginated + filtered)
+```bash
+# Basic list
+curl "http://localhost:5119/api/sales?_page=1&_size=10"
+
+# Filter by customer
+curl "http://localhost:5119/api/sales?customerName=John*"
+
+# Filter by date range
+curl "http://localhost:5119/api/sales?_minDate=2026-01-01&_maxDate=2026-12-31"
+
+# Only active sales, ordered by date descending
+curl "http://localhost:5119/api/sales?isCancelled=false&_order=saleDate+desc"
+
+# Filter by amount range
+curl "http://localhost:5119/api/sales?_minTotalAmount=100&_maxTotalAmount=1000"
+```
+
+**Response format (list):**
+```json
+{
+  "data": [ { "id": "...", "saleNumber": "SALE-001", ... } ],
+  "totalItems": 10,
+  "currentPage": 1,
+  "totalPages": 1
+}
+```
+
+#### Get Sale by ID
+```bash
+curl "http://localhost:5119/api/sales/{id}"
+```
+
+#### Update Sale
+```bash
+curl -X PUT http://localhost:5119/api/sales/{id} \
+  -H "Content-Type: application/json" \
+  -d '{
+    "saleNumber": "SALE-001-UPDATED",
+    "saleDate": "2026-06-01T00:00:00Z",
+    "customerId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "customerName": "John Doe",
+    "branchId": "3fa85f64-5717-4562-b3fc-2c963f66afa7",
+    "branchName": "Main Branch",
+    "items": [
+      { "productId": "3fa85f64-5717-4562-b3fc-2c963f66afa8", "productName": "Product A", "quantity": 5, "unitPrice": 25.00 }
+    ]
+  }'
+```
+
+#### Cancel Sale
+```bash
+curl -X PATCH "http://localhost:5119/api/sales/{id}/cancel"
+```
+
+#### Cancel Sale Item
+```bash
+curl -X PATCH "http://localhost:5119/api/sales/{id}/items/{itemId}/cancel"
+```
+
+#### Delete Sale
+```bash
+curl -X DELETE "http://localhost:5119/api/sales/{id}"
+```
+
+---
+
+### Products API
+
+#### Create Product
+```bash
+curl -X POST http://localhost:5119/api/products \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Fjallraven Backpack",
+    "price": 109.95,
+    "description": "Your perfect pack for everyday use.",
+    "category": "backpacks",
+    "image": "https://example.com/img.jpg",
+    "rating": { "rate": 3.9, "count": 120 }
+  }'
+```
+
+#### List Products
+```bash
+curl "http://localhost:5119/api/products?_page=1&_size=10&_order=price+desc"
+```
+
+#### Get Categories
+```bash
+curl "http://localhost:5119/api/products/categories"
+```
+
+#### Products by Category
+```bash
+curl "http://localhost:5119/api/products/category/backpacks?_page=1&_size=5"
+```
+
+---
+
+### Users API
+
+#### Create User
+```bash
+curl -X POST http://localhost:5119/api/users \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "johndoe",
+    "email": "john@example.com",
+    "password": "Test@123",
+    "phone": "+5511999999999",
+    "status": "Active",
+    "role": "Customer"
+  }'
+```
+
+#### List Users
+```bash
+curl "http://localhost:5119/api/users?_page=1&_size=10&_order=username+asc"
+```
+
+---
+
+## Error Response Format
+
+```json
+{
+  "type": "ResourceNotFound",
+  "error": "Sale with ID '...' not found.",
+  "detail": "Sale with ID '...' not found."
+}
+```
+
+| HTTP Status | Type | When |
+|-------------|------|------|
+| 400 | `ValidationError` | Invalid input (FluentValidation) |
+| 400 | `BusinessError` | Business rule violation |
+| 404 | `ResourceNotFound` | Entity not found |
+| 500 | `InternalError` | Unexpected server error |
+
+---
+
+## Documentation References
+
+- [Overview](.doc/overview.md)
+- [Tech Stack](.doc/tech-stack.md)
+- [Frameworks](.doc/frameworks.md)
+- [General API](.doc/general-api.md)
+- [Products API](.doc/products-api.md)
+- [Carts API](.doc/carts-api.md)
+- [Users API](.doc/users-api.md)
+- [Auth API](.doc/auth-api.md)
